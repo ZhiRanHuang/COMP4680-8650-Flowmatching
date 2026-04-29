@@ -1,7 +1,7 @@
 import torch
 import matplotlib.pyplot as plt
 from src.model import MLP
-
+import os
 
 # -----------------------
 # sampling function
@@ -31,10 +31,35 @@ def sample(model, n=1000, steps=50):
 # main script
 # -----------------------
 if __name__ == "__main__":
-    device = "cuda"
+    device = (
+        "mps" if torch.backends.mps.is_available()
+        else "cuda" if torch.cuda.is_available()
+        else "cpu"
+    )
+
+    ckpt_path = os.path.join(
+
+        "checkpoints",
+
+        "model_swiss_roll_D2.pt"
+
+    )
+
+    # -----------------------
+    # model
+    # -----------------------
     model = MLP(dim=2).to(device)
-    model.load_state_dict(torch.load("model.pt", map_location=device))
+
+    model.load_state_dict(torch.load(ckpt_path, map_location=device))
+
+    # -----------------------
+    # sampling
+    # -----------------------
     samples = sample(model).cpu().numpy()
+
+    # -----------------------
+    # plot
+    # -----------------------
     plt.figure(figsize=(5, 5))
     plt.scatter(samples[:, 0], samples[:, 1], s=2)
     plt.axis("equal")

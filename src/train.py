@@ -6,44 +6,49 @@ import csv
 import os
 
 # ---------------------------
-# device
+# device setup
 # ---------------------------
-device = "cuda"
-
-print("Using device:", device)
+device = "mps"
 
 # ---------------------------
-# data
+# config (IMPORTANT for report)
 # ---------------------------
 dataset_name = "swiss_roll"
 dim = 2
 
+batch_size = 1024
+lr = 1e-3
+steps = 25000
+
+# ---------------------------
+# data
+# ---------------------------
 dataset = ToyDiffusionDataset(dataset_name, dim=dim)
-loader = DataLoader(dataset, batch_size=1024, shuffle=True, drop_last=True)
+loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True)
 data_iter = iter(loader)
 
 # ---------------------------
 # model
 # ---------------------------
 model = MLP(dim=dim).to(device)
-opt = torch.optim.Adam(model.parameters(), lr=1e-3)
+opt = torch.optim.Adam(model.parameters(), lr=lr)
 
 # ---------------------------
 # logging setup
 # ---------------------------
-log_file = f"logs_{dataset_name}_D{dim}.csv"
 os.makedirs("logs", exist_ok=True)
-log_file = f"logs/logs_{dataset_name}_D{dim}.csv"
+log_file = f"logs/log_{dataset_name}_D{dim}.csv"
 
 with open(log_file, "w") as f:
     writer = csv.writer(f)
     writer.writerow(["step", "loss"])
 
 # ---------------------------
-# training
+# training loop
 # ---------------------------
-for step in range(25000):
+for step in range(steps):
 
+    # restart dataloader if needed
     try:
         x = next(data_iter)
     except StopIteration:
@@ -52,24 +57,25 @@ for step in range(25000):
 
     x = x.to(device)
 
-    # time
-    t = torch.rand(x.shape[0], device=device).clamp(1e-5, 1-1e-5)
+    # sample time
+    t = torch.rand(x.shape[0], device=device).clamp(1e-5, 1 - 1e-5)
 
     # noise
     eps = torch.randn_like(x)
 
-    # interpolation
+    # interpolation (forward process)
     z = (1 - t[:, None]) * x + t[:, None] * eps
 
-    # target velocity (v-pred)
+    # v-pred target
     v_target = eps - x
 
-    # prediction
+    # model prediction
     v_pred = model(z, t)
 
-    # loss
+    # loss (v-loss)
     loss = ((v_pred - v_target) ** 2).mean()
 
+    # optimization
     opt.zero_grad()
     loss.backward()
     opt.step()
@@ -78,10 +84,20 @@ for step in range(25000):
     # logging
     # ---------------------------
     if step % 50 == 0:
-        print(f"[{dataset_name} D={dim}] step {step} | loss {loss.item():.4f}")
+        print(f"[{dataset_name} D={dim}] step {step} | loss {loss.item():.6f}")
 
         with open(log_file, "a") as f:
             writer = csv.writer(f)
             writer.writerow([step, loss.item()])
 
+# ---------------------------
+# save model
+# ---------------------------
+os.makedirs("checkpoints", exist_ok=True)
+
+ckpt_path = f"checkpoints/model_{dataset_name}_D{dim}.pt"
+torch.save(model.state_dict(), ckpt_path)
+
 print("training done")
+print(f"model saved to {ckpt_path}")
+print(f"log saved to {log_file}")
