@@ -2,27 +2,47 @@ import torch
 from torch.utils.data import DataLoader
 from src.dataloader import ToyDiffusionDataset
 from src.model import MLP
+import csv
+import os
 
+# ---------------------------
+# device
+# ---------------------------
 device = "cuda"
+
+print("Using device:", device)
 
 # ---------------------------
 # data
 # ---------------------------
-dataset = ToyDiffusionDataset("swiss_roll", dim=2)
-loader = DataLoader(dataset, batch_size=1024, shuffle=True, drop_last=True)
+dataset_name = "swiss_roll"
+dim = 2
 
+dataset = ToyDiffusionDataset(dataset_name, dim=dim)
+loader = DataLoader(dataset, batch_size=1024, shuffle=True, drop_last=True)
 data_iter = iter(loader)
 
 # ---------------------------
 # model
 # ---------------------------
-model = MLP(dim=2).to(device)
+model = MLP(dim=dim).to(device)
 opt = torch.optim.Adam(model.parameters(), lr=1e-3)
 
 # ---------------------------
-# training loop
+# logging setup
 # ---------------------------
-for step in range(20000):
+log_file = f"logs_{dataset_name}_D{dim}.csv"
+os.makedirs("logs", exist_ok=True)
+log_file = f"logs/logs_{dataset_name}_D{dim}.csv"
+
+with open(log_file, "w") as f:
+    writer = csv.writer(f)
+    writer.writerow(["step", "loss"])
+
+# ---------------------------
+# training
+# ---------------------------
+for step in range(25000):
 
     try:
         x = next(data_iter)
@@ -33,7 +53,7 @@ for step in range(20000):
     x = x.to(device)
 
     # time
-    t = torch.rand(x.shape[0], device=device)
+    t = torch.rand(x.shape[0], device=device).clamp(1e-5, 1-1e-5)
 
     # noise
     eps = torch.randn_like(x)
@@ -41,7 +61,7 @@ for step in range(20000):
     # interpolation
     z = (1 - t[:, None]) * x + t[:, None] * eps
 
-    # target velocity
+    # target velocity (v-pred)
     v_target = eps - x
 
     # prediction
@@ -54,7 +74,14 @@ for step in range(20000):
     loss.backward()
     opt.step()
 
-    if step % 500 == 0:
-        print(f"step {step} | loss {loss.item():.4f}")
+    # ---------------------------
+    # logging
+    # ---------------------------
+    if step % 50 == 0:
+        print(f"[{dataset_name} D={dim}] step {step} | loss {loss.item():.4f}")
+
+        with open(log_file, "a") as f:
+            writer = csv.writer(f)
+            writer.writerow([step, loss.item()])
 
 print("training done")
