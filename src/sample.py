@@ -13,7 +13,7 @@ def sample(model, n=1000, dim=2, steps=50):
     ts = torch.linspace(1.0, 0.0, steps + 1, device=device)
 
     for i in range(steps):
-        t = torch.full((n,), ts[i].item(), device=device)  # ⭐关键正确写法
+        t = torch.full((n,), ts[i].item(), device=device)
 
         dt = ts[i + 1] - ts[i]
 
