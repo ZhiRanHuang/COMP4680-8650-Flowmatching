@@ -4,9 +4,9 @@ def plot_step(real, fake, save_path, title):
 
     plt.figure(figsize=(5, 5))
 
-    plt.scatter(real[:, 0], real[:, 1], s=2, label="real")
+    plt.scatter(real[:, 0], real[:, 1], s=2, label="ground truth")
 
-    plt.scatter(fake[:, 0], fake[:, 1], s=2, label="fake")
+    plt.scatter(fake[:, 0], fake[:, 1], s=2, label="samples")
 
     plt.legend()
 

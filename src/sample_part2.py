@@ -21,8 +21,6 @@ def sample_model(model, dim, n=1000, steps=50):
         raw = model(z, t)
 
         # convert prediction → velocity field
-        # IMPORTANT: unify both cases into v_pred
-
         if raw.shape == z.shape:
             # assume v-pred directly
             v = raw

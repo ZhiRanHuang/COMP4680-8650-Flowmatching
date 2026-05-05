@@ -7,7 +7,7 @@ def sample_model(model, n=2000, steps=50):
     device = next(model.parameters()).device
     model.eval()
 
-    dim = model.net[-1].out_features  # 自动识别输出维度
+    dim = model.net[-1].out_features
 
     z = torch.randn(n, dim, device=device)
 
