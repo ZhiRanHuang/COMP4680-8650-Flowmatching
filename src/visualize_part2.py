@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import os
 
+import numpy as np
+
 
 def plot_scatter(real, fake, save_path, title):
 

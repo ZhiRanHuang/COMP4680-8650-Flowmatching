@@ -1,5 +1,16 @@
 import os
 import torch
+import numpy as np
+import random
+
+# ----------------------------
+# FIX SEED
+# ----------------------------
+seed = 42
+np.random.seed(seed)
+torch.manual_seed(seed)
+random.seed(seed)
+
 from src.train_meanflow import train_meanflow
 from src.sample_meanflow import sample_meanflow
 from src.dataloader import ToyDiffusionDataset
@@ -26,8 +37,8 @@ def run():
         model_obj.load_state_dict(model)
         model_obj.eval()
 
-        dataset = ToyDiffusionDataset(dname, dim)
-        real = dataset.data[:, :2]
+        real = np.load(f"{dname}_D{dim}.npy")
+        real = real[:, :2]
 
         for steps in steps_list:
 

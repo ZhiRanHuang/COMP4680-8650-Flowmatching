@@ -1,5 +1,15 @@
 import os
 import torch
+import numpy as np
+import random
+
+# ----------------------------
+# FIX SEED
+# ----------------------------
+seed = 42
+np.random.seed(seed)
+torch.manual_seed(seed)
+random.seed(seed)
 
 from src.train_part2 import train_model
 from src.sample_part2 import sample_model
