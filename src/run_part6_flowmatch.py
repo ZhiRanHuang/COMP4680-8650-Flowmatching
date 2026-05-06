@@ -1,0 +1,76 @@
+import os
+import torch
+import numpy as np
+import random
+
+# ----------------------------
+# FIX SEED
+# ----------------------------
+seed = 42
+np.random.seed(seed)
+torch.manual_seed(seed)
+random.seed(seed)
+
+from src.model import MLP
+from src.sample_part2 import sample_model
+from src.dataloader import ToyDiffusionDataset
+from src.visualize_part2 import plot_scatter
+
+
+datasets = ["swiss_roll", "gaussians", "circles"]
+steps_list = [10, 20, 50]   # Flow Matching steps
+dim = 32
+
+
+def run():
+
+    os.makedirs("part6_fm_results", exist_ok=True)
+
+    device = "cpu"
+
+    for dname in datasets:
+
+        print(f"\n=== Flow Matching: {dname} D=32 ===")
+
+        # -------------------------
+        # load dataset
+        # -------------------------
+        real = np.load(f"{dname}_D{dim}.npy")
+        real = real[:, :2]
+
+        # -------------------------
+        # load checkpoint
+        # -------------------------
+        ckpt_path = f"checkpoints/part2/{dname}_D32_v_v.pt"
+
+        model = MLP(dim).to(device)
+        model.load_state_dict(torch.load(ckpt_path, map_location=device))
+        model.eval()
+
+        # -------------------------
+        # sampling with different steps
+        # -------------------------
+        for steps in steps_list:
+
+            print(f"Sampling {steps} steps...")
+
+            fake = sample_model(
+                model,
+                dim=dim,
+                steps=steps
+            ).cpu().numpy()
+
+            fake_2d = fake[:, :2]
+
+            save_path = f"part6_fm_results/{dname}_fm_{steps}step.png"
+
+            plot_scatter(
+                real,
+                fake_2d,
+                save_path,
+                f"{dname} FM {steps} steps"
+            )
+
+
+if __name__ == "__main__":
+    run()
