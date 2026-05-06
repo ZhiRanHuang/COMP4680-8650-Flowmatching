@@ -28,7 +28,7 @@ def merge():
             mf_img = mpimg.imread(mf_path)
 
             axes[i, 0].imshow(mf_img)
-            axes[i, 0].set_title(f"MeanFlow {mf_steps[i]} step")
+            axes[i, 0].set_title(f"MeanFlow {mf_steps[i]} step", fontsize=10)
             axes[i, 0].axis("off")
 
             # -------------------------
@@ -38,14 +38,18 @@ def merge():
             fm_img = mpimg.imread(fm_path)
 
             axes[i, 1].imshow(fm_img)
-            axes[i, 1].set_title(f"Flow Matching {fm_steps[i]} steps")
+            axes[i, 1].set_title(f"Flow Matching {fm_steps[i]} steps", fontsize=10)
             axes[i, 1].axis("off")
 
-        plt.suptitle(f"{d} Comparison", fontsize=16)
+        plt.suptitle(f"{d} Comparison", fontsize=14)
+
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.92, wspace=0.05, hspace=0.2)
 
         save_path = f"part6_compare/{d}_compare.png"
-        plt.tight_layout()
-        plt.savefig(save_path)
+
+        plt.savefig(save_path, dpi=200, bbox_inches="tight", pad_inches=0.2)
+
         plt.close()
 
         print(f"Saved {save_path}")

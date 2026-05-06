@@ -13,13 +13,25 @@ random.seed(seed)
 
 from src.model import MLP
 from src.sample_part2 import sample_model
-from src.dataloader import ToyDiffusionDataset
 from src.visualize_part2 import plot_scatter
 
-
 datasets = ["swiss_roll", "gaussians", "circles"]
-steps_list = [10, 20, 50]   # Flow Matching steps
+steps_list = [10, 20, 50]
 dim = 32
+
+
+# ============================
+# GLOBAL SCALE
+# ============================
+def compute_global_lim():
+    all_data = []
+
+    for dname in datasets:
+        real = np.load(f"{dname}_D{dim}.npy")[:, :2]
+        all_data.append(real)
+
+    all_data = np.vstack(all_data)
+    return np.max(np.abs(all_data))
 
 
 def run():
@@ -28,6 +40,8 @@ def run():
 
     device = "cpu"
 
+    global_lim = compute_global_lim()
+
     for dname in datasets:
 
         print(f"\n=== Flow Matching: {dname} D=32 ===")
@@ -35,8 +49,7 @@ def run():
         # -------------------------
         # load dataset
         # -------------------------
-        real = np.load(f"{dname}_D{dim}.npy")
-        real = real[:, :2]
+        real = np.load(f"{dname}_D{dim}.npy")[:, :2]
 
         # -------------------------
         # load checkpoint
@@ -48,7 +61,7 @@ def run():
         model.eval()
 
         # -------------------------
-        # sampling with different steps
+        # sampling
         # -------------------------
         for steps in steps_list:
 
@@ -68,7 +81,8 @@ def run():
                 real,
                 fake_2d,
                 save_path,
-                f"{dname} FM {steps} steps"
+                f"{dname} FM {steps} steps",
+                lim=global_lim
             )
 
 

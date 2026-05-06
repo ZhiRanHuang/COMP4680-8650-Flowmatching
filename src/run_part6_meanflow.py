@@ -22,23 +22,39 @@ steps_list = [1, 2, 5]
 dim = 32
 
 
+# ============================
+# GLOBAL SCALE
+# ============================
+def compute_global_lim():
+    all_data = []
+
+    for dname in datasets:
+        real = np.load(f"{dname}_D{dim}.npy")[:, :2]
+        all_data.append(real)
+
+    all_data = np.vstack(all_data)
+    return np.max(np.abs(all_data))
+
+
 def run():
 
     os.makedirs("part6_results", exist_ok=True)
+
+    global_lim = compute_global_lim()
+
     for dname in datasets:
+
         print(f"\n=== Training MeanFlow: {dname} D={dim} ===")
         ckpt = train_meanflow(dname, dim)
 
         model = torch.load(ckpt, map_location="cpu")
-        model_obj = None
 
         from src.model_meanflow import MeanFlowMLP
         model_obj = MeanFlowMLP(dim)
         model_obj.load_state_dict(model)
         model_obj.eval()
 
-        real = np.load(f"{dname}_D{dim}.npy")
-        real = real[:, :2]
+        real = np.load(f"{dname}_D{dim}.npy")[:, :2]
 
         for steps in steps_list:
 
@@ -51,7 +67,8 @@ def run():
                 real,
                 fake,
                 save_path,
-                f"{dname} MeanFlow {steps} step"
+                f"{dname} MeanFlow {steps} step",
+                lim=global_lim
             )
 
 
