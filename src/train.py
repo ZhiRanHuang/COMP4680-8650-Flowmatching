@@ -1,103 +1,81 @@
+import os
 import torch
+import numpy as np
 from torch.utils.data import DataLoader
+
 from src.dataloader import ToyDiffusionDataset
 from src.model import MLP
-import csv
-import os
 
-# ---------------------------
-# device setup
-# ---------------------------
-device = "mps"
+# ----------------------------
+# config
+# ----------------------------
+seed = 42
+torch.manual_seed(seed)
+np.random.seed(seed)
 
-# ---------------------------
-# config (IMPORTANT for report)
-# ---------------------------
-dataset_name = "swiss_roll"
+device = (
+    "mps" if torch.backends.mps.is_available()
+    else "cuda" if torch.cuda.is_available()
+    else "cpu"
+)
+
+datasets = ["swiss_roll", "gaussians", "circles"]
 dim = 2
 
 batch_size = 1024
 lr = 1e-3
 steps = 25000
 
-# ---------------------------
-# data
-# ---------------------------
-dataset = ToyDiffusionDataset(dataset_name, dim=dim)
-loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True)
-data_iter = iter(loader)
-
-# ---------------------------
-# model
-# ---------------------------
-model = MLP(dim=dim).to(device)
-opt = torch.optim.Adam(model.parameters(), lr=lr)
-
-# ---------------------------
-# logging setup
-# ---------------------------
-os.makedirs("logs", exist_ok=True)
-log_file = f"logs/log_{dataset_name}_D{dim}.csv"
-
-with open(log_file, "w") as f:
-    writer = csv.writer(f)
-    writer.writerow(["step", "loss"])
-
-# ---------------------------
+# ----------------------------
 # training loop
-# ---------------------------
-for step in range(steps):
+# ----------------------------
+def train_one(dataset_name):
 
-    # restart dataloader if needed
-    try:
-        x = next(data_iter)
-    except StopIteration:
-        data_iter = iter(loader)
-        x = next(data_iter)
+    dataset = ToyDiffusionDataset(dataset_name, dim)
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True)
+    data_iter = iter(loader)
 
-    x = x.to(device)
+    model = MLP(dim).to(device)
+    opt = torch.optim.Adam(model.parameters(), lr=lr)
 
-    # sample time
-    t = torch.rand(x.shape[0], device=device).clamp(1e-5, 1 - 1e-5)
+    os.makedirs("checkpoints/part1", exist_ok=True)
 
-    # noise
-    eps = torch.randn_like(x)
+    for step in range(steps):
 
-    # interpolation (forward process)
-    z = (1 - t[:, None]) * x + t[:, None] * eps
+        try:
+            x = next(data_iter)
+        except StopIteration:
+            data_iter = iter(loader)
+            x = next(data_iter)
 
-    # v-pred target
-    v_target = eps - x
+        x = x.to(device)
 
-    # model prediction
-    v_pred = model(z, t)
+        t = torch.rand(x.shape[0], device=device).clamp(1e-5, 1 - 1e-5)
+        eps = torch.randn_like(x)
 
-    # loss (v-loss)
-    loss = ((v_pred - v_target) ** 2).mean()
+        z = (1 - t[:, None]) * x + t[:, None] * eps
 
-    # optimization
-    opt.zero_grad()
-    loss.backward()
-    opt.step()
+        v_target = eps - x
+        v_pred = model(z, t)
 
-    # ---------------------------
-    # logging
-    # ---------------------------
-    if step % 50 == 0:
-        print(f"[{dataset_name} D={dim}] step {step} | loss {loss.item():.6f}")
+        loss = ((v_pred - v_target) ** 2).mean()
 
-        with open(log_file, "a") as f:
-            writer = csv.writer(f)
-            writer.writerow([step, loss.item()])
+        opt.zero_grad()
+        loss.backward()
+        opt.step()
 
-# ---------------------------
-# save model
-# ---------------------------
-os.makedirs("checkpoints", exist_ok=True)
+        if step % 1000 == 0:
+            print(f"[{dataset_name}] step {step} | loss {loss.item():.6f}")
 
-ckpt_path = f"checkpoints/model_{dataset_name}_D{dim}.pt"
-torch.save(model.state_dict(), ckpt_path)
+    ckpt_path = f"checkpoints/part1/{dataset_name}_D2.pt"
+    torch.save(model.state_dict(), ckpt_path)
 
-print("training done")
-print(f"model saved to {ckpt_path}")
-print(f"log saved to {log_file}")
+    print(f"Saved: {ckpt_path}")
+
+
+# ----------------------------
+# run all datasets
+# ----------------------------
+if __name__ == "__main__":
+    for d in datasets:
+        train_one(d)
