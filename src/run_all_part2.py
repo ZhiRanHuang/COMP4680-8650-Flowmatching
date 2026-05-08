@@ -37,9 +37,29 @@ def run_all():
                     print(f"\n=== Running {dname} D={dim} {pred}-{loss} ===")
 
                     # -------------------------
-                    # 1. train model
+                    # checkpoint path
                     # -------------------------
-                    ckpt = train_model(dname, dim, pred, loss)
+                    ckpt_path = (
+                        f"checkpoints/part2/"
+                        f"{dname}_D{dim}_{pred}_{loss}.pt"
+                    )
+
+                    # -------------------------
+                    # 1. train model if needed
+                    # -------------------------
+                    if os.path.exists(ckpt_path):
+
+                        print(f"Checkpoint exists: {ckpt_path}")
+                        print("Skipping training...")
+
+                    else:
+
+                        print("Training model...")
+                        ckpt = train_model(dname, dim, pred, loss)
+
+                        # rename/move checkpoint if needed
+                        if ckpt != ckpt_path:
+                            os.rename(ckpt, ckpt_path)
 
                     # -------------------------
                     # 2. load dataset
@@ -54,7 +74,7 @@ def run_all():
                     # 3. load model
                     # -------------------------
                     model = MLP(dim)
-                    model.load_state_dict(torch.load(ckpt, map_location="cpu"))
+                    model.load_state_dict(torch.load(ckpt_path, map_location="cpu"))
 
                     # -------------------------
                     # 4. sample
