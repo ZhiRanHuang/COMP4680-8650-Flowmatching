@@ -3,6 +3,8 @@ import torch
 import numpy as np
 import random
 
+from src.visualize_part6 import plot_scatter_part6
+
 # ----------------------------
 # FIX SEED
 # ----------------------------
@@ -63,12 +65,12 @@ def run():
 
             save_path = f"part6_results/{dname}_meanflow_{steps}step.png"
 
-            plot_scatter(
+            plot_scatter_part6(
                 real,
                 fake,
                 save_path,
                 f"{dname} MeanFlow {steps} step",
-                lim=global_lim
+                global_lim
             )
 
 

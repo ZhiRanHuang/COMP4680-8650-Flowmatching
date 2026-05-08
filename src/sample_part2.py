@@ -1,6 +1,5 @@
 import torch
 
-
 @torch.no_grad()
 def sample_model(model, dim, n=1000, steps=50):
 
@@ -13,20 +12,19 @@ def sample_model(model, dim, n=1000, steps=50):
 
     for i in range(steps):
 
-        t = ts[i].repeat(n).to(device)
+        t = ts[i].expand(n)
         t_next = ts[i + 1]
 
-        dt = t_next - ts[i]
+        dt = (t_next - ts[i])
 
-        raw = model(z, t)
+        v = model(z, t)
 
-        # convert prediction → velocity field
-        if raw.shape == z.shape:
-            # assume v-pred directly
-            v = raw
-        else:
-            raise ValueError("Model output shape mismatch")
+        # only safety, NOT scaling geometry
+        v = torch.nan_to_num(v, 0.0)
 
-        z = z + v * dt
+        scale = v.norm(dim=1).mean()
+        dt_eff = dt / (1.0 + scale)
+
+        z = z + v * dt_eff
 
     return z

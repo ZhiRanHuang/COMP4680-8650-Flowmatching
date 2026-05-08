@@ -3,6 +3,8 @@ import torch
 import numpy as np
 import random
 
+from src.visualize_part6 import plot_scatter_part6
+
 # ----------------------------
 # FIX SEED
 # ----------------------------
@@ -77,12 +79,12 @@ def run():
 
             save_path = f"part6_fm_results/{dname}_fm_{steps}step.png"
 
-            plot_scatter(
+            plot_scatter_part6(
                 real,
                 fake_2d,
                 save_path,
                 f"{dname} FM {steps} steps",
-                lim=global_lim
+                global_lim=global_lim
             )
 
 

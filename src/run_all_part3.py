@@ -22,6 +22,9 @@ datasets = ["swiss_roll"]
 dims = [2, 8, 32]
 modes = ["baseline", "rescue", "large"]
 
+ckpt_dir = "checkpoints/part3"
+os.makedirs(ckpt_dir, exist_ok=True)
+
 
 def run():
 
@@ -33,13 +36,28 @@ def run():
 
                 print(f"\n=== {dname} D={dim} MODE={mode} ===")
 
-                ckpt = train_part3(dname, dim, mode)
+                # --------------------
+                # checkpoint path
+                # --------------------
+                ckpt_path = os.path.join(
+                    ckpt_dir,
+                    f"{dname}_D{dim}_{mode}.pt"
+                )
 
                 # --------------------
-                # load model properly
+                # train or load
                 # --------------------
-                model = MLP(dim)
-                model.load_state_dict(torch.load(ckpt, map_location="cpu"))
+                if os.path.exists(ckpt_path):
+                    print(f"✔ Found checkpoint: {ckpt_path}")
+                    model = MLP(dim)
+                    model.load_state_dict(torch.load(ckpt_path, map_location="cpu"))
+                else:
+                    print("✖ No checkpoint, training...")
+                    ckpt_path = train_part3(dname, dim, mode)
+
+                    model = MLP(dim)
+                    model.load_state_dict(torch.load(ckpt_path, map_location="cpu"))
+
                 model.eval()
 
                 # --------------------
@@ -54,7 +72,7 @@ def run():
                 real = dataset.data.numpy()
 
                 # --------------------
-                # projection to 2D if needed
+                # projection
                 # --------------------
                 if dim != 2:
                     real = dataset.to_2d(real)
